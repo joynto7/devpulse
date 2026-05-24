@@ -1,97 +1,84 @@
- DevPulse is a lightweight issue-tracking API and web client for open-source projects, providing contributor/maintainer roles, issue creation and lifecycle management.
- 
-Features
+# DevPulse
 
-    User signup and login (JWT auth)
-    Create, list, view, update, and delete issues
-    Role-based authorization (contributor, maintainer)
-    PostgreSQL-backed persistence
+**Live URL:** https://devpulse-mauve-six.vercel.app/
 
-Tech stack
+REST API for tracking bugs and feature requests with contributor and maintainer roles.
 
-    Node.js + TypeScript
-    Express
-    PostgreSQL (pg)
-    tsup for bundling
-    bcrypt, jsonwebtoken
+## Features
 
-Live URL
+- User signup and login (JWT)
+- CRUD operations for issues
+- Role-based permissions (contributor, maintainer)
+- PostgreSQL persistence
 
-https://devpulse-mauve-six.vercel.app/
+## Tech Stack
 
-Setup
+| Category | Technologies |
+|----------|----------------|
+| Runtime | Node.js, TypeScript |
+| Framework | Express |
+| Database | PostgreSQL |
+| Auth | bcrypt, jsonwebtoken |
 
-Prerequisites
+## Setup
 
-    Node.js 18+ and npm/yarn
-    PostgreSQL database
+1. Clone the repository and install dependencies.
 
-Quick start
+```bash
+git clone https://github.com/joynto7/devpulse.git
+cd devpulse
+npm install
+```
 
-    Clone the repo
+2. Create a `.env` file with `DATABASE_URL`, `JWT_SECRET`, and `JWT_EXPIRES_IN`.
 
-    git clone cd devpulse
+3. Run the application.
 
-    Install dependencies
+```bash
+npm run dev      # development
+npm run build && npm start   # production
+```
 
-    npm install
+For Vercel deployment, add the same environment variables in the project settings and redeploy.
 
-    Create a .env file in the project root with the following variables:
+## API Endpoints
 
-PORT=5000
-DATABASE_URL=.....
-JWT_SECRET=.....
-JWT_EXPIRES_IN=1d
-BCRYPT_SALT_ROUNDS=10
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/` | No | Health check |
+| POST | `/api/auth/signup` | No | Register a user |
+| POST | `/api/auth/login` | No | Authenticate and receive a JWT |
+| GET | `/api/issues` | No | List issues (`sort`, `type`, `status`) |
+| GET | `/api/issues/:id` | No | Get one issue |
+| POST | `/api/issues` | Bearer token | Create an issue |
+| PATCH | `/api/issues/:id` | Bearer token | Update an issue |
+| DELETE | `/api/issues/:id` | Bearer token (maintainer) | Delete an issue |
 
-    Build and run (development)
+Protected routes use the header: `Authorization: Bearer <token>`.
 
-    npm run build node dist/server.js
+## Database Schema
 
-The server bootstrap calls the database initializer (initializeDatabase) on startup to create required tables if they do not exist.
-API Endpoints
+**users**
 
-Base path: /api
+| Column | Type | Notes |
+|--------|------|-------|
+| id | SERIAL | Primary key |
+| name | VARCHAR | Required |
+| email | VARCHAR | Unique |
+| password | VARCHAR | Hashed |
+| role | VARCHAR | `contributor` or `maintainer` |
+| created_at | TIMESTAMP | |
+| updated_at | TIMESTAMP | |
 
-    Auth
-        POST /api/auth/signup — register a new user
-            Body: { "name": string, "email": string, "password": string, "role"?: "contributor" | "maintainer" }
-        POST /api/auth/login — authenticate and receive JWT
-            Body: { "email": string, "password": string }
+**issues**
 
-    Issues
-        POST /api/issues — create issue (authenticated)
-            Body: { "title": string, "description": string, "type": "bug" | "feature_request" }
-        GET /api/issues — list issues (query: sort=newest|oldest, type, status)
-        GET /api/issues/:id — get single issue
-        PATCH /api/issues/:id — update an issue (authenticated, role checks applied)
-        DELETE /api/issues/:id — delete an issue (maintainer only)
-
-curl -X POST https://your-api.example.com/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"alice@example.com","password":"password"}'
-
-# Then use returned token:
-curl -X POST https://your-api.example.com/api/issues \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{"title":"Bug in UI","description":"Steps to reproduce...","type":"bug"}'
-
-Database schema
-
-    users table
-        id SERIAL PRIMARY KEY
-        name VARCHAR(255) NOT NULL
-        email VARCHAR(255) UNIQUE NOT NULL
-        password VARCHAR(255) NOT NULL
-        role VARCHAR(50) DEFAULT 'contributor' CHECK role IN ('contributor','maintainer')
-        created_at, updated_at TIMESTAMP
-
-    issues table
-        id SERIAL PRIMARY KEY
-        title VARCHAR(150) NOT NULL
-        description TEXT NOT NULL (min length 20 enforced in DB)
-        type VARCHAR(50) NOT NULL CHECK type IN ('bug','feature_request')
-        status VARCHAR(50) DEFAULT 'open' CHECK status IN ('open','in_progress','resolved')
-        reporter_id INTEGER NOT NULL (FK to users.id)
-        created_at, updated_at TIMESTAMP
+| Column | Type | Notes |
+|--------|------|-------|
+| id | SERIAL | Primary key |
+| title | VARCHAR(150) | Required |
+| description | TEXT | Min 20 characters |
+| type | VARCHAR | `bug` or `feature_request` |
+| status | VARCHAR | `open`, `in_progress`, `resolved` |
+| reporter_id | INTEGER | Foreign key to users |
+| created_at | TIMESTAMP | |
+| updated_at | TIMESTAMP | |
